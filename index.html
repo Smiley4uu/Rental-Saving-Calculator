@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rental Savings Calculator</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        form { max-width: 500px; margin: auto; padding: 1em; background: #f9f9f9; border-radius: 5px; }
+        div { margin-bottom: 1em; }
+        label { margin-bottom: .5em; color: #333333; display: block; }
+        input, select { border: 1px solid #CCCCCC; padding: .5em; font-size: 1em; width: 100%; box-sizing: border-box; }
+        button { padding: 0.7em; color: #fff; background-color: #007BFF; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        h2 { text-align: center; }
+        .tooltip { position: relative; display: inline-block; border-bottom: 1px dotted black; cursor: help; }
+        .tooltip .tooltiptext { visibility: hidden; width: 200px; background-color: black; color: #fff; text-align: center; border-radius: 5px; padding: 5px; position: absolute; z-index: 1; bottom: 100%; left: 50%; margin-left: -100px; opacity: 0; transition: opacity 0.3s; }
+        .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+    </style>
+</head>
+<body>
+    <h1>Rental Savings Calculator</h1>
+    <form id="calculator-form">
+        <div>
+            <label for="product-category">Product Category:</label>
+            <select id="product-category" onchange="setDefaultValues()">
+                <option value="electronics">Electronics</option>
+                <option value="furniture">Furniture</option>
+                <option value="vehicles">Vehicles</option>
+                <option value="appliances">Appliances</option>
+                <option value="tools">Tools</option>
+                <option value="clothing">Clothing</option>
+                <option value="sports">Sports Equipment</option>
+                <option value="books">Books</option>
+                <option value="toys">Toys</option>
+                <option value="music">Musical Instruments</option>
+                <option value="office">Office Equipment</option>
+                <option value="garden">Garden Equipment</option>
+                <option value="party">Party Supplies</option>
+                <option value="camera">Cameras</option>
+                <option value="bikes">Bikes</option>
+            </select>
+        </div>
+        <div>
+            <label for="currency">Currency:</label>
+            <select id="currency">
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+                <option value="JPY">JPY</option>
+                <option value="AUD">AUD</option>
+                <option value="CAD">CAD</option>
+            </select>
+        </div>
+        <div>
+            <label for="purchase-price">Purchase Price:</label>
+            <input type="number" id="purchase-price" value="1000" required>
+            <span class="tooltip">?
+                <span class="tooltiptext">The initial cost of buying the product.</span>
+            </span>
+        </div>
+        <div>
+            <label for="rental-cost">Rental Cost per Month:</label>
+            <input type="number" id="rental-cost" value="50" required>
+            <span class="tooltip">?
+                <span class="tooltiptext">The cost of renting the product per month.</span>
+            </span>
+        </div>
+        <div>
+            <label for="usage-period">Usage Period (years):</label>
+            <input type="number" id="usage-period" value="1" required>
+            <span class="tooltip">?
+                <span class="tooltiptext">The number of years you plan to use the product.</span>
+            </span>
+        </div>
+        <div>
+            <label for="maintenance-cost">Maintenance Cost per Year:</label>
+            <input type="number" id="maintenance-cost" value="100" required>
+            <span class="tooltip">?
+                <span class="tooltiptext">Ongoing costs for maintaining the product if owned.</span>
+            </span>
+        </div>
+        <div>
+            <label for="resale-value">Resale Value:</label>
+            <input type="number" id="resale-value" value="300" required>
+            <span class="tooltip">?
+                <span class="tooltiptext">The potential resale value of the product after a certain period.</span>
+            </span>
+        </div>
+        <div>
+            <button type="button" onclick="calculateSavings()">Calculate Savings</button>
+        </div>
+    </form>
+    <h2 id="result"></h2>
+    <canvas id="comparisonChart" width="400" height="200"></canvas>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        function formatCurrency(value, currency) {
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency }).format(value);
+        }
+
+        function setDefaultValues() {
+            const category = document.getElementById('product-category').value;
+            const defaultValues = {
+                electronics: { purchase: 1000, rental: 50, maintenance: 50, resale: 300 },
+                furniture: { purchase: 1500, rental: 75, maintenance: 100, resale: 500 },
+                vehicles: { purchase: 20000, rental: 500, maintenance: 1000, resale: 10000 },
+                appliances: { purchase: 800, rental: 40, maintenance: 60, resale: 200 },
+                tools: { purchase: 300, rental: 20, maintenance: 30, resale: 100 },
+                clothing: { purchase: 100, rental: 10, maintenance: 10, resale: 30 },
+                sports: { purchase: 500, rental: 25, maintenance: 20, resale: 150 },
+                books: { purchase: 20, rental: 5, maintenance: 0, resale: 10 },
+                toys: { purchase: 50, rental: 5, maintenance: 5, resale: 20 },
+                music: { purchase: 1200, rental: 60, maintenance: 50, resale: 400 },
+                office: { purchase: 2000, rental: 100, maintenance: 100, resale: 700 },
+                garden: { purchase: 400, rental: 20, maintenance: 30, resale: 150 },
+                party: { purchase: 100, rental: 10, maintenance: 5, resale: 20 },
+                camera: { purchase: 800, rental: 40, maintenance: 50, resale: 300 },
+                bikes: { purchase: 700, rental: 35, maintenance: 50, resale: 250 },
+            };
+
+            const values = defaultValues[category];
+            document.getElementById('purchase-price').value = values.purchase;
+            document.getElementById('rental-cost').value = values.rental;
+            document.getElementById('maintenance-cost').value = values.maintenance;
+            document.getElementById('resale-value').value = values.resale;
+        }
+
+        function calculateSavings() {
+            const purchasePrice = parseFloat(document.getElementById('purchase-price').value);
+            const rentalCost = parseFloat(document.getElementById('rental-cost').value);
+            const usagePeriod = parseInt(document.getElementById('usage-period').value);
+            const maintenanceCost = parseFloat(document.getElementById('maintenance-cost').value);
+            const resaleValue = parseFloat(document.getElementById('resale-value').value);
+            const productCategory = document.getElementById('product-category').value;
+            const currency = document.getElementById('currency').value;
+
+            let depreciationFactor;
+            switch (productCategory) {
+                case 'electronics':
+                    depreciationFactor = 0.8;
+                    break;
+                case 'furniture':
+                    depreciationFactor = 0.6;
+                    break;
+                case 'vehicles':
+                    depreciationFactor = 0.7;
+                    break;
+                case 'appliances':
+                    depreciationFactor = 0.7;
+                    break;
+                case 'tools':
+                    depreciationFactor = 0.5;
+                    break;
+                case 'clothing':
+                    depreciationFactor = 0.3;
+                    break;
+                case 'sports':
+                    depreciationFactor = 0.6;
+                    break;
+                case 'books':
+                    depreciationFactor = 0.4;
+                    break;
+                case 'toys':
+                    depreciationFactor = 0.5;
+                    break;
+                case 'music':
+                    depreciationFactor = 0.7;
+                    break;
+                case 'office':
+                    depreciationFactor = 0.6;
+                    break;
+                case 'garden':
+                    depreciationFactor = 0.5;
+                    break;
+                case 'party':
+                    depreciationFactor = 0.4;
+                    break;
+                case 'camera':
+                    depreciationFactor = 0.8;
+                    break;
+                case 'bikes':
+                    depreciationFactor = 0.7;
+                    break;
+                default:
+                    depreciationFactor = 1;
+            }
+
+            const totalOwnershipCost = (purchasePrice + (maintenanceCost * usagePeriod) - resaleValue) * depreciationFactor;
+            const totalRentalCost = rentalCost * (usagePeriod * 12);
+            const savings = totalRentalCost - totalOwnershipCost;
+
+            const resultText = savings > 0 ? `Renting saves you ${formatCurrency(savings, currency)}` : `Buying saves you ${formatCurrency(Math.abs(savings), currency)}`;
+            document.getElementById('result').innerText = resultText;
+
+            const ctx = document.getElementById('comparisonChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Total Ownership Cost', 'Total Rental Cost'],
+                    datasets: [{
+                        label: 'Cost',
+                        data: [totalOwnershipCost, totalRentalCost],
+                        backgroundColor: ['rgba(54, 162, 235, 0.2)', 'rgba(255, 99, 132, 0.2)'],
+                        borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
